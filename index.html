@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assassins Game Participants</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 20px;
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        p {
+            font-size: 1.2em;
+            color: #555;
+        }
+
+        #loading {
+            text-align: center;
+            font-size: 1.5em;
+            color: #007BFF;
+            display: none;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 20px 0;
+            font-size: 1.1em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Assassins Game Participants</h1>
+    <p>This list shows the participants in the Assassins game and their targets. Use the search bar to filter participants by name.</p>
+
+    <div id="loading">Loading...</div>
+    <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search for names..">
+
+    <table id="participantsTable">
+        <thead>
+            <tr>
+                <th>Participant</th>
+                <th>Target</th>
+            </tr>
+        </thead>
+        <tbody id="participantsBody">
+            <!-- Participants will be populated here -->
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchData() {
+            document.getElementById('loading').style.display = 'block';
+            const startingId = 'ae9f16bc-5b36-4057-9262-dc4b8653dbb3'; // Starting participant ID
+            const apiUrl = 'https://assassins-backend.onrender.com/api/get-user-by-id?id=';
+
+            let participants = [];
+            let visitedIds = new Set();
+
+            async function getUserById(userId) {
+                const response = await fetch(apiUrl + userId);
+                return response.json();
+            }
+
+            let currentUser = await getUserById(startingId);
+
+            while (!visitedIds.has(currentUser.id)) {
+                visitedIds.add(currentUser.id);
+                const targetUser = await getUserById(currentUser.target);
+
+                participants.push({ participant: currentUser.name, target: targetUser.name });
+
+                currentUser = targetUser;
+            }
+
+            populateTable(participants);
+        }
+
+        function populateTable(participants) {
+            const tableBody = document.getElementById('participantsBody');
+            tableBody.innerHTML = '';
+            participants.forEach(({ participant, target }) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${participant}</td><td>${target}</td>`;
+                tableBody.appendChild(row);
+            });
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function filterTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById('participantsTable');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName('td');
+                if (td) {
+                    const participant = td[0].textContent || td[0].innerText;
+                    const target = td[1].textContent || td[1].innerText;
+                    if (participant.toLowerCase().indexOf(filter) > -1 || target.toLowerCase().indexOf(filter) > -1) {
+                        tr[i].style.display = '';
+                    } else {
+                        tr[i].style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        window.onload = fetchData;
+    </script>
+
+</body>
+</html>
